@@ -1,0 +1,260 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_STUDENTS 100
+#define MAX_NAME_LENGTH 50
+struct Student {
+    int id;
+    char name[MAX_NAME_LENGTH];
+};
+
+struct StudentRecord {
+    struct Student students[MAX_STUDENTS];
+    int count;
+};
+void clearScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        clrscr();
+    #endif
+}
+void printWithDelay(char ch, unsigned int microseconds) {
+    putchar(ch);
+    fflush(stdout);
+    usleep(microseconds);
+}
+
+
+void printTitleAnimation() {
+    const char* title = "\t********MINISYSTEM********  \n\t***Student Record System***";
+    int length = strlen(title);
+
+    for (int i = 0; i < length; i++) {
+        printWithDelay(title[i], 80000);
+    }
+
+    printf("\n\n");
+}
+
+void createStudent(struct StudentRecord *record, int id, const char *name) {
+    if (record->count < MAX_STUDENTS) {
+        struct Student newStudent;
+        newStudent.id = id;
+        strncpy(newStudent.name, name, MAX_NAME_LENGTH);
+
+        record->students[record->count] = newStudent;
+        record->count++;
+clearScreen();
+        printf("\tStudent record created successfully!\n");
+    } else {
+        clearScreen();
+        printf("\tStudent record is full. Cannot create more records.\n");
+    }
+}
+
+void displayStudents(const struct StudentRecord *record) {
+    if (record->count == 0) {
+
+        printf("No student records found.\n");
+        return;
+    }
+
+    printf("Student Records:\n");
+    for (int i = 0; i < record->count; i++) {
+        printf("ID: %d\n", record->students[i].id);
+        printf("Name: %s\n", record->students[i].name);
+        printf("---------------------\n");
+    }
+}
+
+int findStudentIndex(const struct StudentRecord *record, int id) {
+    for (int i = 0; i < record->count; i++) {
+        if (record->students[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void updateStudent(struct StudentRecord *record, int id, const char *newName) {
+    int index = findStudentIndex(record, id);
+    if (index != -1) {
+        strncpy(record->students[index].name, newName, MAX_NAME_LENGTH);
+        printf("\tStudent record updated successfully!\n");
+    } else {
+        printf("Student record not found.\n");
+    }
+}
+
+void deleteStudent(struct StudentRecord *record, int id) {
+    int index = findStudentIndex(record, id);
+    if (index != -1) {
+        record->students[index] = record->students[record->count - 1];
+        record->count--;
+        printf("\tStudent record deleted successfully!\n");
+    } else {
+        printf("\tStudent record not found.\n");
+    }
+}
+
+void saveStudentRecords(const struct StudentRecord *record, const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    for (int i = 0; i < record->count; i++) {
+        fprintf(file, "%d,%s\n", record->students[i].id, record->students[i].name);
+    }
+
+    fclose(file);
+    printf("\tStudent records saved to file.\n");
+}
+
+void loadStudentRecords(struct StudentRecord *record, const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    record->count = 0;
+    char line[MAX_NAME_LENGTH + 10];
+
+    while (fgets(line, sizeof(line), file)) {
+        int id;
+        char name[MAX_NAME_LENGTH];
+        sscanf(line, "%d,%[^\n]", &id, name);
+        createStudent(record, id, name);
+    }
+
+    fclose(file);
+    printf("Student records loaded from file.\n");
+}
+
+void printHorizontalBorder(int width) {
+    for (int i = 0; i < width; i++) {
+        printf("-");
+    }
+    printf("\n");
+}
+
+void printVerticalBorder(int height, int width) {
+    for (int i = 0; i < height; i++) {
+        printf("|");
+        for (int j = 0; j < width; j++) {
+            printf(" ");
+        }
+        printf("|\n");
+    }
+}
+
+void displayStudentsWithBorder(const struct StudentRecord *record) {
+    if (record->count == 0) {
+        printf("No student records found.\n");
+        return;
+    }
+
+    int borderHeight = record->count * 3 + 2;
+    int borderWidth = MAX_NAME_LENGTH + 5;
+
+    printHorizontalBorder(borderWidth);
+
+    printf("| ID   | Name");
+    for (int i = 0; i < MAX_NAME_LENGTH - 4; i++) {
+        printf(" ");
+    }
+    printf("|\n");
+
+    printHorizontalBorder(borderWidth);
+
+    for (int i = 0; i < record->count; i++) {
+        printf("| %04d | %s", record->students[i].id, record->students[i].name);
+        for (int j = strlen(record->students[i].name); j < MAX_NAME_LENGTH; j++) {
+            printf(" ");
+        }
+        printf("|\n");
+    }
+
+    printHorizontalBorder(borderWidth);
+}
+
+int main() {
+    struct StudentRecord record;
+    record.count = 0;
+
+    int choice;
+    int id;
+    char name[MAX_NAME_LENGTH];
+    char filename[100];
+       clearScreen();
+      printTitleAnimation();
+
+
+    do {
+        printf("\t+--------------------------------+\n");
+        printf("\t|         Student Records        |\n");
+        printf("\t+--------------------------------+\n");
+        printf("\t|    1. Create Student Record    |\n");
+        printf("\t|    2. Display Student Records  |\n");
+        printf("\t|    3. Update Student Record    |\n");
+        printf("\t|    4. Delete Student Record    |\n");
+        printf("\t|    5. Save Student Records     |\n");
+        printf("\t|    6. Load Student Records     |\n");
+        printf("\t|    7. Exit                     |\n");
+        printf("\t+--------------------------------+\n");
+
+        printf("    \tEnter your choice: ");
+        scanf("%d", &choice);
+        clearScreen();
+        switch (choice) {
+            case 1:
+                printf("    \tEnter student ID: ");
+                scanf("%d", &id);
+                printf("    \tEnter student name: ");
+                scanf(" %[^\n]", name);
+                       clearScreen();
+
+                createStudent(&record, id, name);
+                break;
+            case 2:
+                  displayStudentsWithBorder(&record);
+                break;
+            case 3:
+                printf("    \tEnter student ID to update: ");
+                scanf("%d", &id);
+                printf("    \tEnter new student name: ");
+                scanf(" %[^\n]", name);
+                clearScreen();
+                updateStudent(&record, id, name);
+                break;
+            case 4:
+                printf("    \tEnter student ID to delete: ");
+                scanf("%d", &id);
+                deleteStudent(&record, id);
+                break;
+            case 5:
+                printf("    \tEnter filename to save student records: ");
+                scanf(" %[^\n]", filename);
+                saveStudentRecords(&record, filename);
+                break;
+            case 6:
+                printf("    \tEnter filename to load student records: ");
+                scanf(" %[^\n]", filename);
+                loadStudentRecords(&record, filename);
+                break;
+            case 7:
+                printf("    \tExiting Student Record System...\n");
+                break;
+            default:
+                printf("    \tInvalid choice. Please try again.\n");
+        }
+
+        printf("\n");
+    } while (choice != 7);
+
+    return 1;
+}
